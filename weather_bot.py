@@ -2,23 +2,22 @@ import wemo
 import argparse
 from darksky import forecast
 from datetime import date, timedelta
-from credentials import darksky_key
+from credentials import darksky_key as api_key
 from location_data import get_location
 from time import sleep
 
 active_alerts = 0
-CAUTION_TYPES = ('Tornado Warning', 'Tornado Watch', 'Severe Thunderstorm Warning', 'Severe Thunderstorm Watch')
-ALERT_TYPES = ('Tornado Warning',)
+CAUTION_TYPES = ('Tornado Warning', 'Tornado Watch', 'Severe Thunderstorm Warning', 'Severe Thunderstorm Watch', 'Wind Advisory')
+ALERT_TYPES = ('Tornado Warning', 'Wind Advisory')
 
 # CONFIGURATION #
-home_location = 'home'
-sleep_clear = 60
-sleep_stormy = 10
-debug = False
+# Sleep time between polls
+SLEEP_CLEAR = (60 * 15)  # Every 15 minutes
+SLEEP_STORMY = 60  # Once a minute
 
 
 def activate_warning():
-    if args.debug is True:
+    if DEBUG is True:
         print('### TORNADO DETECTED ###')
 
 
@@ -29,7 +28,7 @@ def monitor_alerts(alerts):
     for alert in alerts:
         if alert['title'] in CAUTION_TYPES:
             active_alerts += 1
-            if args.debug is True:
+            if DEBUG is True:
                 print('Alert ' + str(active_alerts) + ':  ' + alert['title'])
             if alert['title'] in ALERT_TYPES:
                 activate_warning()
@@ -45,12 +44,12 @@ def check_weather(lat, lon, location):
 
     #with forecast(darksky_key, lat, lon) as current_forecast:
     try:
-        current_forecast = forecast(darksky_key, lat, lon)
+        current_forecast = forecast(api_key, lat, lon)
     except:
         print('Unable to retrieve weather data.')
         return
 
-    if args.all is True:
+    if ALL_OUTPUT is True:
         print('Report for: ' + location)
         print(current_forecast.daily.summary, end='\n---\n')
 
@@ -71,9 +70,8 @@ def check_weather(lat, lon, location):
         return
 
 
-if __name__ == '__main__':
-    global args
-
+def arg_parser():
+    global DEBUG, RUN_ONCE, ALL_OUTPUT, LOCATION
     parser = argparse.ArgumentParser()
     parser.add_argument('-o', '--once', help='Only run once', action='store_true')
     parser.add_argument('-a', '--all', action='store_true')
@@ -81,22 +79,29 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--debug', action='store_true')
     args = parser.parse_args()
 
-    if args.debug is True:
-        poll_count = 0
+    DEBUG = args.debug
+    RUN_ONCE = args.once
+    ALL_OUTPUT = args.all
+    LOCATION = args.location
 
-    current_lat, current_lon, current_name = get_location(args.location)
+
+if __name__ == '__main__':
+    poll_count = 0
+    arg_parser()
+
+    current_lat, current_lon, current_name = get_location(LOCATION)
     while True:
         check_weather(current_lat, current_lon, current_name)
 
-        if args.debug is True:
+        if DEBUG is True:
             poll_count += 1
             print('Poll count: ' + str(poll_count))
 
-        if args.once is True:
+        if RUN_ONCE is True:
             break
         if active_alerts > 0:
-            sleep(sleep_stormy)
+            sleep(SLEEP_STORMY)
         else:
-            sleep(sleep_clear)
+            sleep(SLEEP_CLEAR)
 
 
