@@ -63,9 +63,11 @@ def check_alerts(alerts):
                 print('Alert ' + str(active_alerts) + ':  ' + alert['title'])
             if alert['title'] in ALERT_TYPES:
                 activate_warning()
-        print(alert['title'])
-        print(alert['description'])
-        print('##############################')
+        
+        if ALL_OUTPUT is True:
+            print(alert['title'])
+            print(alert['description'])
+            print('##############################')
 
 
 def get_weather_statements(lat, lon, location):
@@ -78,7 +80,7 @@ def get_weather_statements(lat, lon, location):
 
     #with forecast(darksky_key, lat, lon) as current_forecast:
     try:
-        current_forecast = forecast(api_key, lat, lon)
+        current_forecast = forecast(api_key, lat, lon, exclude='currently,minutely,hourly,daily')
     except:
         print('Unable to retrieve weather data.')
         return None
@@ -98,7 +100,7 @@ def get_weather_statements(lat, lon, location):
         print('---')
 
     try:
-        active_statements = len(current_forecast['alerts'])
+        len(current_forecast['alerts'])
         return current_forecast['alerts']
     except KeyError:
         return None
@@ -134,7 +136,7 @@ if __name__ == '__main__':
         if DEBUG is True:
             now = localtime(time())
             poll_count += 1
-            print('Poll count: ' + str(poll_count) + ' at ' + asctime(now))
+            print('Poll: ' + str(poll_count) + ' Alerts: ' + str(active_alerts) + ' at ' + asctime(now))
 
         if RUN_ONCE is True:
             break
