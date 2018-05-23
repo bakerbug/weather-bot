@@ -80,7 +80,10 @@ def get_weather_statements(lat, lon, location):
 
     #with forecast(darksky_key, lat, lon) as current_forecast:
     try:
-        current_forecast = forecast(api_key, lat, lon, exclude='currently,minutely,hourly,daily')
+        if ALL_OUTPUT is True:
+            current_forecast = forecast(api_key, lat, lon)
+        else:
+            current_forecast = forecast(api_key, lat, lon, exclude='currently,minutely,hourly,daily')
     except:
         print('Unable to retrieve weather data.')
         return None
