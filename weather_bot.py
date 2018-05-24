@@ -81,7 +81,7 @@ def get_weather_statements(lat, lon, location):
     #with forecast(darksky_key, lat, lon) as current_forecast:
     try:
         if ALL_OUTPUT is True:
-            current_forecast = forecast(api_key, lat, lon)
+            current_forecast = forecast(api_key, lat, lon, exclude='minutely,hourly')
         else:
             current_forecast = forecast(api_key, lat, lon, exclude='currently,minutely,hourly,daily')
     except:
@@ -90,6 +90,10 @@ def get_weather_statements(lat, lon, location):
 
     if ALL_OUTPUT is True:
         print('Report for: ' + location)
+        temp = str(current_forecast['currently']['temperature']) + u'\N{DEGREE SIGN}' + 'F'
+        humidity = str(int(current_forecast['currently']['humidity'] * 100))
+        summary = current_forecast['currently']['summary']
+        print('Current conditions: %s, %s with %s%% humidity.' % (summary, temp, humidity) )
         print(current_forecast.daily.summary, end='\n---\n')
 
         for day in current_forecast.daily:
