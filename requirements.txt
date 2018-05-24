@@ -1,0 +1,2 @@
+darkskylib==0.3.91
+pywemo==0.4.27
