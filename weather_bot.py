@@ -38,7 +38,7 @@ def prepare_lights():
 def forget_lights():
     """Clears discovered lights so that the data doesn't become stale."""
     global lights
-    lights = []
+    del lights
 
 
 def activate_warning():
