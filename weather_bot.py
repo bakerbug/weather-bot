@@ -6,11 +6,12 @@ from credentials import darksky_key as api_key
 from location_data import get_location
 from time import time, localtime, sleep, asctime
 
-active_alerts = 0
+caution_count = 0
 lights = []
-CAUTION_TYPES = ('Tornado Warning', 'Tornado Watch', 'Severe Thunderstorm Warning', 'Severe Thunderstorm Watch', 'Wind Advisory')
+alert_hash_list = []
+CAUTION_TYPES = ('Tornado Warning', 'Tornado Watch', 'Severe Thunderstorm Warning', 'Severe Thunderstorm Watch')
 ALERT_TYPES = ('Tornado Warning',)
-LIGHTS_CONTROLLED = ('Sofa Lamp', 'Entry Lamp', 'Bedroom Lamp')
+LIGHTS_CONTROLLED = ('Sofa Lamp', 'Entry Lamp', 'Bedroom Lamp', 'Sink Light')
 
 # CONFIGURATION #
 # Sleep time between polls
@@ -29,16 +30,17 @@ def prepare_lights():
 
     if DEBUG:
         for light in discovered_lights:
-            print('Discovered ' + light.name)
+            print('Discovered %s' % light.name)
 
     for light in discovered_lights:
         if light.name in LIGHTS_CONTROLLED:
             lights.append(light)
 
-def forget_lights():
-    """Clears discovered lights so that the data doesn't become stale."""
-    global lights
+def stand_down():
+    """Clears discovered information so that the data doesn't become stale."""
+    global lights, alert_hash_list
     del lights
+    del alert_hash_list
 
 
 def activate_warning():
@@ -47,28 +49,36 @@ def activate_warning():
     for light in lights:
         light.on()
         if DEBUG:
-            print('Enabled ' + light.name)
+            print('Enabled %s' % light.name)
 
 
 def check_alerts(alerts):
     """ Inspects weather data for alerts and takes action for certain conditions. """
-    global active_alerts
+    global caution_count, alert_hash_list
 
-    active_alerts = 0
+    new_caution_count = 0
     for alert in alerts:
         if alert['title'] in CAUTION_TYPES:
-            active_alerts += 1
+            new_caution_count += 1
             prepare_lights()
             if DEBUG is True:
-                print('Alert ' + str(active_alerts) + ':  ' + alert['title'])
+                print('Caution Statement %i:  %s' % (new_caution_count, alert['title']))
             if alert['title'] in ALERT_TYPES:
-                activate_warning()
+                alert_hash = hash(alert['description'])
+                if DEBUG:
+                    print('Alert hash: %s' % alert_hash)
+                if alert_hash not in alert_hash_list:
+                    activate_warning()
+                    alert_hash_list.append(alert_hash)
         
         if ALL_OUTPUT is True:
             print(alert['title'])
             print(alert['description'])
             print('##############################')
 
+    if caution_count > 0 and new_caution_count == 0:
+        stand_down()
+    caution_count = new_caution_count
 
 def get_weather_statements(lat, lon, location):
     """ Fetches the weather data.
@@ -89,7 +99,7 @@ def get_weather_statements(lat, lon, location):
         return None
 
     if ALL_OUTPUT is True:
-        print('Report for: ' + location)
+        print('Report for: %s' % location)
         temp = str(current_forecast['currently']['temperature']) + u'\N{DEGREE SIGN}' + 'F'
         humidity = str(int(current_forecast['currently']['humidity'] * 100))
         summary = current_forecast['currently']['summary']
@@ -143,11 +153,11 @@ if __name__ == '__main__':
         if DEBUG is True:
             now = localtime(time())
             poll_count += 1
-            print('Poll: ' + str(poll_count) + ' Alerts: ' + str(active_alerts) + ' at ' + asctime(now))
+            print('Poll: %i  Cautions: %i at %s.' % (poll_count, caution_count, asctime(now)))
 
         if RUN_ONCE is True:
             break
-        if active_alerts > 0:
+        if caution_count > 0:
             sleep(SLEEP_STORMY)
         else:
             sleep(SLEEP_CLEAR)
