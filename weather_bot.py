@@ -23,7 +23,7 @@ def prepare_lights():
     global lights
 
     # Lights are already prepared, don't waste time doing it again.
-    if len(lights) > 0:
+    if len(lights) >= len(LIGHTS_CONTROLLED):
         return
 
     discovered_lights = wemo.discover_devices()
@@ -33,8 +33,11 @@ def prepare_lights():
             print('Discovered %s' % light.name)
 
     for light in discovered_lights:
-        if light.name in LIGHTS_CONTROLLED:
+        if light.name in LIGHTS_CONTROLLED and light.name not in lights:
             lights.append(light)
+
+    if DEBUG:
+        print('Searching for %i lights.  Found %i' % (len(LIGHTS_CONTROLLED), len(lights)))
 
 def stand_down():
     """Clears discovered information so that the data doesn't become stale."""
