@@ -39,6 +39,12 @@ def prepare_lights():
     if DEBUG:
         print('Searching for %i lights.  Found %i' % (len(LIGHTS_CONTROLLED), len(lights)))
 
+def activate_lights():
+    for light in lights:
+        light.on()
+        if DEBUG:
+            print('Activated %s' % light.name)
+
 def stand_down():
     """Clears discovered information so that the data doesn't become stale."""
     global lights, alert_hash_list
@@ -49,10 +55,7 @@ def stand_down():
 def activate_warning():
     if DEBUG is True:
         print('### TORNADO DETECTED ###')
-    for light in lights:
-        light.on()
-        if DEBUG:
-            print('Enabled %s' % light.name)
+    activate_lights()
 
 
 def check_alerts(alerts):
@@ -91,7 +94,6 @@ def get_weather_statements(lat, lon, location):
     """
     weekday = date.today()
 
-    #with forecast(darksky_key, lat, lon) as current_forecast:
     try:
         if ALL_OUTPUT is True:
             current_forecast = forecast(api_key, lat, lon, exclude='minutely,hourly')
@@ -128,23 +130,36 @@ def get_weather_statements(lat, lon, location):
 
 def arg_parser():
     """ Sets command line arguments as global variables. """
-    global DEBUG, RUN_ONCE, ALL_OUTPUT, LOCATION
+    global ALL_OUTPUT, DEBUG, LOCATION, RUN_ONCE, TEST
     parser = argparse.ArgumentParser()
-    parser.add_argument('-o', '--once', help='Only run once', action='store_true')
     parser.add_argument('-a', '--all', action='store_true')
-    parser.add_argument('-l', '--location', type=str, default='home')
     parser.add_argument('-d', '--debug', action='store_true')
+    parser.add_argument('-l', '--location', type=str, default='home')
+    parser.add_argument('-o', '--once', help='Only run once', action='store_true')
+    parser.add_argument('-t', '--test', action='store_true', help='Test activating lights')
+    
+    
     args = parser.parse_args()
 
-    DEBUG = args.debug
-    RUN_ONCE = args.once
     ALL_OUTPUT = args.all
+    DEBUG = args.debug
     LOCATION = args.location
+    RUN_ONCE = args.once
+    TEST = args.test
+
+    if TEST:
+        DEBUG = True
 
 
 if __name__ == '__main__':
     poll_count = 0
     arg_parser()
+
+    if TEST:
+        prepare_lights()
+        activate_warning()
+        stand_down()
+        exit()
 
     current_lat, current_lon, current_name = get_location(LOCATION)
     while True:
